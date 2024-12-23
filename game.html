@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Gamer Style Number Guessing Game</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 10px cyan;
+        }
+        input, button {
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            margin: 10px;
+            border-radius: 10px;
+            border: none;
+            outline: none;
+        }
+        input {
+            width: 50%;
+            border: 2px solid cyan;
+        }
+        button {
+            cursor: pointer;
+            background: linear-gradient(45deg, cyan, blue);
+            color: white;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: linear-gradient(45deg, blue, cyan);
+            transform: scale(1.1);
+        }
+        .feedback {
+            font-size: 1.5rem;
+            margin: 20px 0;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                text-shadow: 0 0 10px cyan;
+            }
+            50% {
+                text-shadow: 0 0 20px cyan;
+            }
+        }
+        .hidden {
+            display: none;
+        }
+        .leaderboard {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .leaderboard h3 {
+            margin-bottom: 10px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #ddd;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        .progress {
+            height: 100%;
+            border-radius: 10px;
+            background: #76d7c4;
+            width: 0;
+            transition: width 0.5s;
+        }
+        .score-history {
+            font-size: 1rem;
+            color: #ffeb3b;
+        }
+        .floating-score {
+            position: absolute;
+            font-size: 2rem;
+            color: lime;
+            animation: float 2s linear;
+        }
+        @keyframes float {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-100px); }
+        }
+        #mini-scoreboard {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="mini-scoreboard">
+        <h3>Mini Scoreboard</h3>
+        <p id="mini-score"></p>
+    </div>
+    <div class="container">
+        <h1>🔥 Pro Gamer Number Guessing Game 🔥</h1>
+        <div id="setupPhase">
+            <h2>Player 1: Set the Secret Number</h2>
+            <input type="password" id="secretNumber" placeholder="Enter a number (1-100)">
+            <button onclick="setSecretNumber()">Confirm</button>
+        </div>
+        <div id="playPhase" class="hidden">
+            <h2 id="currentPlayer">Player 2: Make a Guess</h2>
+            <input type="number" id="guess" placeholder="Enter your guess">
+            <button onclick="makeGuess()">Submit Guess</button>
+            <div class="feedback" id="feedback"></div>
+            <div id="score-board" class="score-history"></div>
+        </div>
+        <div class="leaderboard">
+            <h3>Leaderboard</h3>
+            <ol id="leaderboardList"></ol>
+        </div>
+    </div>
+
+    <script>
+        let secretNumber;
+        let currentPlayer = 1;
+        let totalPlayers = 2;
+        let playerNames = [];
+        let leaderboard = {};
+        let playerScores = [];
+        let streaks = {};
+        let scoreHistory = {};
+        let setterName = '';
+        let gameWinner = null;
+
+        function setSecretNumber() {
+            secretNumber = parseInt(document.getElementById('secretNumber').value);
+            if (isNaN(secretNumber) || secretNumber < 1 || secretNumber > 100) {
+                alert('Please enter a valid number between 1 and 100.');
+                return;
+            }
+            if (!setterName) {
+                setterName = playerNames[currentPlayer - 1];
+            }
+
+            document.getElementById('setupPhase').classList.add('hidden');
+            document.getElementById('playPhase').classList.remove('hidden');
+            updateCurrentPlayer();
+        }
+
+        function makeGuess() {
+            if (gameWinner) {
+                alert(`${gameWinner} is the winner! Game Over.`);
+                return;
+            }
+
+            const guess = parseInt(document.getElementById('guess').value);
+            if (isNaN(guess) || guess < 1 || guess > 100) {
+                alert('Please enter a valid number between 1 and 100.');
+                return;
+            }
+
+            const feedback = document.getElementById('feedback');
+            let pointsEarned = 0;
+            let correctGuess = false;
+
+            if (guess === secretNumber) {
+                feedback.textContent = `🎉 Correct! ${playerNames[currentPlayer - 1]} guessed it! 🎉`;
+                feedback.style.color = 'lime';
+                pointsEarned = 5;
+                correctGuess = true;
+                streaks[playerNames[currentPlayer - 1]] = (streaks[playerNames[currentPlayer - 1]] || 0) + 1;
+                leaderboard[playerNames[currentPlayer - 1]] = (leaderboard[playerNames[currentPlayer - 1]] || 0) + pointsEarned;
+                scoreHistory[playerNames[currentPlayer - 1]] = scoreHistory[playerNames[currentPlayer - 1]] || [];
+                scoreHistory[playerNames[currentPlayer - 1]].push(pointsEarned);
+                updateLeaderboard();
+                showFloatingScore(pointsEarned);
+                updateMiniScoreboard();
+                checkWinner();
+            } else {
+                feedback.textContent = `❌ Incorrect guess. Try again!`;
+                feedback.style.color = 'red';
+            }
+
+            updateProgressBar(currentPlayer - 1, pointsEarned);
+
+            if (correctGuess) {
+                nextPlayer();
+            }
+        }
+
+        function showFloatingScore(points) {
+            const floatingScore = document.createElement('div');
+            floatingScore.classList.add('floating-score');
+            floatingScore.textContent = `+${points} Points!`;
+            document.body.appendChild(floatingScore);
+            setTimeout(() => floatingScore.remove(), 2000);
+        }
+
+        function updateProgressBar(playerIndex, points) {
+            const progressBar = document.getElementById(`progressBar${playerIndex}`);
+            const progress = (leaderboard[playerNames[playerIndex]] || 0) / 15 * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function nextPlayer() {
+            currentPlayer = currentPlayer % totalPlayers + 1;
+            updateCurrentPlayer();
+        }
+
+        function updateCurrentPlayer() {
+            document.getElementById('currentPlayer').textContent = `${playerNames[currentPlayer - 1]}: Make a Guess`;
+        }
+
+        function updateLeaderboard() {
+            const leaderboardList = document.getElementById('leaderboardList');
+            leaderboardList.innerHTML = '';
+            Object.keys(leaderboard).forEach(player => {
+                const li = document.createElement('li');
+                li.textContent = `${player}: ${leaderboard[player]} points`;
+                leaderboardList.appendChild(li);
+            });
+        }
+
+        function checkWinner() {
+            Object.keys(leaderboard).forEach(player => {
+                if (leaderboard[player] >= 15) {
+                    gameWinner = player;
+                    alert(`${gameWinner} wins with 15 points!`);
+                }
+            });
+        }
+
+        function updateMiniScoreboard() {
+            const miniScoreboard = document.getElementById('mini-score');
+            miniScoreboard.innerHTML = '';
+            Object.keys(leaderboard).forEach(player => {
+                miniScoreboard.innerHTML += `${player}: ${leaderboard[player]} | `;
+            });
+        }
+
+        function initializeGame() {
+            for (let i = 1; i <= totalPlayers; i++) {
+                playerNames.push(prompt(`Enter Player ${i}'s name:`) || `Player ${i}`);
+            }
+        }
+
+        initializeGame();
+    </script>
+</body>
+</html>
