@@ -214,11 +214,12 @@
         let teamScores = {};
         let currentPlayer = '';
         let currentTeam = [];
-        let totalRounds = 5; // Number of rounds for the game
+        let totalRounds = 20; // Number of rounds for the game
         let currentRound = 1;
         let currentPlayerIndex = 0; // To track the current player in the team
         let achievements = [];
         let cluesUsed = new Set(); // Track if the player has used a clue
+        let teamCluesUsed = {}; // Track clues used by each team in the current round
         let clues = [
             "The number is even.",
             "The number is greater than 50.",
@@ -352,16 +353,19 @@
 
         // Use Clue
         document.getElementById('use-clue').addEventListener('click', () => {
-            if (!cluesUsed.has(currentTeam)) {
-                // Select a random clue
+            if (!teamCluesUsed[currentTeam]) {
+                teamCluesUsed[currentTeam] = 0;
+            }
+            if (teamCluesUsed[currentTeam] < 3) {
                 const clue = clues[Math.floor(Math.random() * clues.length)];
                 document.getElementById('clue-feedback').innerText = `Clue: ${clue}`;
-                cluesUsed.add(currentTeam); // Mark clue as used by this team
                 document.getElementById('clue-feedback').classList.remove('hidden');
+                teamCluesUsed[currentTeam]++;
             } else {
-                alert("You have already used a clue!");
+                alert("You've already used all 3 clues for this round!");
             }
         });
+
 
         // Back to settings
         document.getElementById('back-settings').addEventListener('click', () => {
