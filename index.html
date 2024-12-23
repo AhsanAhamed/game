@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Gamer Style Number Guessing Game</title>
+    <title>Secret Number Guessing Game</title>
     <style>
-        /* Basic Styling for the Game */
+        /* Same styles as before */
         body {
             margin: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -66,9 +66,6 @@
                 text-shadow: 0 0 20px cyan;
             }
         }
-        .hidden {
-            display: none;
-        }
         .leaderboard {
             margin-top: 20px;
             padding: 15px;
@@ -82,16 +79,6 @@
             font-size: 1rem;
             color: #ffeb3b;
         }
-        .floating-score {
-            position: absolute;
-            font-size: 2rem;
-            color: lime;
-            animation: float 2s linear;
-        }
-        @keyframes float {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-100px); }
-        }
         #mini-scoreboard {
             position: absolute;
             top: 10px;
@@ -101,205 +88,265 @@
             border-radius: 10px;
             color: white;
             font-size: 1.2rem;
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .team {
+            margin: 10px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+        .team-score {
+            color: limegreen;
+            font-weight: bold;
+        }
+        .team-name {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        .team-members {
+            font-size: 1rem;
+        }
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <div id="mini-scoreboard">
-        <h3>Mini Scoreboard</h3>
-        <p id="mini-score">Player: 0 Points</p>
-    </div>
     <div class="container">
-        <h1>🔥 Pro Gamer Number Guessing Game 🔥</h1>
-        <div id="setupPhase">
-            <h2>Set the Number of Players</h2>
-            <input type="number" id="totalPlayers" placeholder="Enter number of players" min="2">
-            <button onclick="startGame()">Start Game</button>
+        <h1>Secret Number Guessing Game</h1>
+        <div id="team-setup">
+            <h3>Select Team or Play Alone</h3>
+            <button id="create-team">Create Team</button>
+            <button id="play-alone">Play Alone</button>
         </div>
-        <div id="setupSecretPhase" class="hidden">
-            <h2>Player 1: Set the Secret Number</h2>
-            <input type="text" id="setterName" placeholder="Enter your name (Setter)">
-            <input type="password" id="secretNumber" placeholder="Enter a number (1-100)">
-            <button onclick="setSecretNumber()">Confirm</button>
+
+        <div id="game-setup" class="hidden">
+            <h3>Setup Your Game</h3>
+            <label for="num-teams">Number of Teams: </label>
+            <input type="number" id="num-teams" placeholder="Enter number of teams (e.g., 2, 3)">
+            <button id="setup-teams">Setup Teams</button>
         </div>
-        <div id="playPhase" class="hidden">
-            <h2 id="currentPlayer">Player 2: Make a Guess</h2>
-            <input type="number" id="guess" placeholder="Enter your guess">
-            <button onclick="makeGuess()">Submit Guess</button>
-            <div class="feedback" id="feedback"></div>
-            <div id="score-board" class="score-history"></div>
+
+        <div id="team-details" class="hidden">
+            <h3>Enter Team Details</h3>
+            <div id="teams-list"></div>
+            <button id="start-game">Start Game</button>
         </div>
-        <div class="leaderboard">
+
+        <div id="game-section" class="hidden">
+            <h3 id="team-name"></h3>
+            <input type="number" id="guess" placeholder="Enter your guess (1-100)" />
+            <button id="submit-guess">Submit Guess</button>
+            <div id="feedback" class="feedback"></div>
+            <button id="use-clue">Use Clue</button>
+            <div id="clue-feedback" class="feedback hidden"></div>
+        </div>
+
+        <div id="leaderboard" class="leaderboard hidden">
             <h3>Leaderboard</h3>
-            <ol id="leaderboardList"></ol>
+            <div id="team-scores"></div>
         </div>
-        <div id="gameOverPhase" class="hidden">
-            <h2>Game Over!</h2>
-            <button onclick="restartGame()">Restart Game</button>
+
+        <!-- Mini Scoreboard -->
+        <div id="mini-scoreboard" class="hidden">
+            <h4>Scoreboard</h4>
+            <div id="mini-team-scores"></div>
         </div>
     </div>
 
     <script>
-        let secretNumber;
-        let currentPlayer = 1;
-        let totalPlayers = 0;
-        let playerNames = [];
-        let leaderboard = {};
-        let playerScores = [];
-        let streaks = {};
-        let scoreHistory = {};
-        let setterName = '';
-        let gameWinner = null;
-        let playerGuessCounts = {};
+        // Game data
+        let secretNumber = Math.floor(Math.random() * 100) + 1;
+        let playerScore = 0;
+        let teams = [];
+        let teamScores = {};
+        let currentPlayer = '';
+        let currentTeam = [];
+        let totalRounds = 5; // Number of rounds for the game
+        let currentRound = 0;
+        let currentPlayerIndex = 0; // To track the current player in the team
+        let achievements = [];
+        let cluesUsed = new Set(); // Track if the player has used a clue
+        let clues = [
+            "The number is even.",
+            "The number is greater than 50.",
+            "The number is a prime number.",
+            "The number is divisible by 3.",
+            "The number is less than 30.",
+            "The number is odd.",
+            "The number is a perfect square.",
+            "The number is greater than 75.",
+            "The number is a multiple of 5.",
+            "The number is less than 10.",
+            "The number is a two-digit number.",
+            "The number is divisible by 7.",
+            "The number is a Fibonacci number.",
+            "The number is a perfect cube.",
+            "The number is a multiple of 4.",
+            "The number is greater than 25 but less than 50.",
+            "The number is smaller than 60.",
+            "The number is divisible by 6.",
+            "The number is a multiple of 2.",
+            "The number is prime.",
+            "The number is divisible by 9.",
+            "The number is an odd multiple of 3.",
+            "The number is between 50 and 80.",
+            "The number is a triangular number.",
+            "The number is divisible by 10."
+            // Add more clues here up to 100+
+        ];
 
-        function startGame() {
-            totalPlayers = parseInt(document.getElementById('totalPlayers').value);
-            if (isNaN(totalPlayers) || totalPlayers < 2) {
-                alert('Please enter a valid number of players (at least 2).');
-                return;
-            }
-
-            document.getElementById('setupPhase').classList.add('hidden');
-            document.getElementById('setupSecretPhase').classList.remove('hidden');
-        }
-
-        function setSecretNumber() {
-            setterName = document.getElementById('setterName').value;
-            secretNumber = parseInt(document.getElementById('secretNumber').value);
-            if (isNaN(secretNumber) || secretNumber < 1 || secretNumber > 100) {
-                alert('Please enter a valid number between 1 and 100.');
-                return;
-            }
-
-            playerNames.push(setterName);
-            for (let i = 2; i <= totalPlayers; i++) {
-                let playerName = prompt(`Enter Player ${i}'s name:`);
-                playerNames.push(playerName);
-            }
-
-            document.getElementById('setupSecretPhase').classList.add('hidden');
-            document.getElementById('playPhase').classList.remove('hidden');
-            updateCurrentPlayer();
-        }
-
-       // Function to give dynamic feedback based on the secret number
-       function giveFeedback(guess) {
+        // Function to generate feedback based on guess
+        function generateFeedback(guess) {
             const diff = Math.abs(secretNumber - guess);
-            let feedback = "";
-
-            // Define dynamic ranges based on the secret number
-            const hotRange = [secretNumber - 5, secretNumber + 5];   // Hot: ±5 around secret number
-            const warmRange = [secretNumber - 10, secretNumber + 10];  // Warm: ±10 around secret number
-            const coldRange = [secretNumber - 20, secretNumber + 20];  // Cold: ±20 around secret number
-            const veryColdRange = [1, 100];  // Very Cold: Outside of Hot and Warm ranges
-
-            // Determine the feedback based on the guess
-            if (guess >= hotRange[0] && guess <= hotRange[1]) {
-                feedback = "Hot! You're very close.";
-            } else if (guess >= warmRange[0] && guess <= warmRange[1]) {
-                feedback = "Warm!";
-            } else if (guess >= coldRange[0] && guess <= coldRange[1]) {
-                feedback = "Cold.";
-            } else if (guess >= veryColdRange[0] && guess <= veryColdRange[1]) {
-                feedback = "Very Cold! You're very far.";
-            }
-
-            return feedback;
+            if (diff === 0) return "Correct! You've guessed the secret number!";
+            if (diff <= 2) return "Blazing Hot!";
+            if (diff <= 5) return "Scorching!";
+            if (diff <= 10) return "Warm!";
+            if (diff <= 20) return "Cold!";
+            return "Freezing!";
         }
 
-
-        function makeGuess() {
-            if (gameWinner) {
-                alert(`${gameWinner} is the winner! Game Over.`);
-                return;
-            }
-
-            if (playerNames[currentPlayer - 1] === setterName) {
-                alert(`${setterName} is the setter, and cannot guess!`);
-                nextPlayer();
-                return;
-            }
-
-            const guess = parseInt(document.getElementById('guess').value);
-            if (isNaN(guess) || guess < 1 || guess > 100) {
-                alert('Please enter a valid number between 1 and 100.');
-                return;
-            }
-
-            const feedback = giveFeedback(guess);
-            document.getElementById('feedback').textContent = feedback;
-
-            playerGuessCounts[playerNames[currentPlayer - 1]] = (playerGuessCounts[playerNames[currentPlayer - 1]] || 0) + 1;
-            document.getElementById('score-board').textContent = `${playerNames[currentPlayer - 1]}: Guess Count: ${playerGuessCounts[playerNames[currentPlayer - 1]]}`;
-
-            if (guess === secretNumber) {
-                alert("🎉 Correct! You guessed it!");
-                leaderboard[playerNames[currentPlayer - 1]] = (leaderboard[playerNames[currentPlayer - 1]] || 0) + 5;
-                showFloatingScore(5);
-                updateLeaderboard();
-                updateMiniScoreboard();
-                checkWinner();
-                setNewSecretNumber();
-            }
-
-            nextPlayer();
-        }
-
-        function showFloatingScore(points) {
-            const floatingScore = document.createElement('div');
-            floatingScore.classList.add('floating-score');
-            floatingScore.textContent = `+${points} Points!`;
-            document.body.appendChild(floatingScore);
-            setTimeout(() => floatingScore.remove(), 2000);
-        }
-
-        function setNewSecretNumber() {
-            secretNumber = Math.floor(Math.random() * 100) + 1;
-            console.log('New Secret Number:', secretNumber);
-        }
-
+        // Update leaderboard
         function updateLeaderboard() {
-            const leaderboardList = document.getElementById('leaderboardList');
-            leaderboardList.innerHTML = '';
-            for (let player in leaderboard) {
-                const li = document.createElement('li');
-                li.textContent = `${player}: ${leaderboard[player]} Points`;
-                leaderboardList.appendChild(li);
+            const leaderboard = document.getElementById('team-scores');
+            leaderboard.innerHTML = '';
+            for (let team in teamScores) {
+                const teamDiv = document.createElement('div');
+                teamDiv.classList.add('team');
+                teamDiv.innerHTML = `
+                    <div class="team-name">${team}</div>
+                    <div class="team-score">Score: ${teamScores[team]}</div>
+                `;
+                leaderboard.appendChild(teamDiv);
             }
         }
 
+        // Update mini scoreboard
         function updateMiniScoreboard() {
-            const miniScore = document.getElementById('mini-score');
-            miniScore.textContent = `${playerNames[currentPlayer - 1]}: ${leaderboard[playerNames[currentPlayer - 1]] || 0} Points`;
-        }
-
-        function nextPlayer() {
-            currentPlayer = (currentPlayer % totalPlayers) + 1;
-            updateCurrentPlayer();
-        }
-
-        function updateCurrentPlayer() {
-            document.getElementById('currentPlayer').textContent = `${playerNames[currentPlayer - 1]}: Make a Guess`;
-        }
-
-        function checkWinner() {
-            const winner = Object.keys(leaderboard).reduce((a, b) => leaderboard[a] > leaderboard[b] ? a : b);
-            if (leaderboard[winner] >= 10) {
-                gameWinner = winner;
-                document.getElementById('gameOverPhase').classList.remove('hidden');
-                document.getElementById('playPhase').classList.add('hidden');
+            const miniLeaderboard = document.getElementById('mini-team-scores');
+            miniLeaderboard.innerHTML = '';
+            for (let team in teamScores) {
+                const miniTeamDiv = document.createElement('div');
+                miniTeamDiv.innerHTML = `
+                    <div class="team-name">${team}</div>
+                    <div class="team-score">Score: ${teamScores[team]}</div>
+                `;
+                miniLeaderboard.appendChild(miniTeamDiv);
             }
         }
 
-        function restartGame() {
-            leaderboard = {};
-            playerNames = [];
-            streaks = {};
-            playerScores = [];
-            document.getElementById('gameOverPhase').classList.add('hidden');
-            document.getElementById('setupPhase').classList.remove('hidden');
-            gameWinner = null;
+        // Unlock achievement based on player progress
+        function unlockAchievement(name) {
+            if (!achievements.includes(name)) {
+                achievements.push(name);
+                alert(`Achievement unlocked: ${name}`);
+            }
         }
+
+        // Check for unlocked content
+        function checkUnlockables() {
+            if (achievements.length >= 5) {
+                alert('New theme unlocked: Dark Mode!');
+            }
+            if (playerScore >= 50) {
+                alert('New difficulty unlocked: Medium!');
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('create-team').addEventListener('click', () => {
+            document.getElementById('team-setup').classList.add('hidden');
+            document.getElementById('game-setup').classList.remove('hidden');
+        });
+
+        document.getElementById('play-alone').addEventListener('click', () => {
+            currentPlayer = prompt("Enter your name:");
+            document.getElementById('team-name').innerText = `Player: ${currentPlayer}`;
+            document.getElementById('team-setup').classList.add('hidden');
+            document.getElementById('game-section').classList.remove('hidden');
+        });
+
+        document.getElementById('setup-teams').addEventListener('click', () => {
+            const numTeams = document.getElementById('num-teams').value;
+            if (numTeams > 0) {
+                let teamSetupHTML = '';
+                for (let i = 1; i <= numTeams; i++) {
+                    teamSetupHTML += `
+                        <label for="team${i}">Team ${i} Name:</label>
+                        <input type="text" id="team${i}" placeholder="Team ${i} Name">
+                    `;
+                }
+                document.getElementById('teams-list').innerHTML = teamSetupHTML;
+                document.getElementById('game-setup').classList.add('hidden');
+                document.getElementById('team-details').classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('start-game').addEventListener('click', () => {
+            const teamsList = [];
+            for (let i = 1; i <= teams.length; i++) {
+                const teamName = document.getElementById(`team${i}`).value;
+                if (teamName) {
+                    teamsList.push(teamName);
+                    teamScores[teamName] = 0;
+                }
+            }
+            teams = teamsList;
+            document.getElementById('team-details').classList.add('hidden');
+            document.getElementById('game-section').classList.remove('hidden');
+            currentTeam = teams[0];
+            document.getElementById('team-name').innerText = `Team: ${currentTeam}`;
+            updateLeaderboard();
+        });
+
+        document.getElementById('submit-guess').addEventListener('click', () => {
+            const guess = parseInt(document.getElementById('guess').value);
+            if (guess) {
+                const feedback = generateFeedback(guess);
+                document.getElementById('feedback').innerText = feedback;
+                if (feedback === "Correct! You've guessed the secret number!") {
+                    teamScores[currentTeam] += 10;  // Reward points
+                    updateLeaderboard();
+                    unlockAchievement('First Win');
+                    checkUnlockables();
+                }
+            }
+        });
+
+        // Use Clue
+        document.getElementById('use-clue').addEventListener('click', () => {
+            if (!cluesUsed.has(currentTeam)) {
+                // Select a random clue
+                const clue = clues[Math.floor(Math.random() * clues.length)];
+                document.getElementById('clue-feedback').innerText = `Clue: ${clue}`;
+                cluesUsed.add(currentTeam); // Mark clue as used by this team
+                document.getElementById('clue-feedback').classList.remove('hidden');
+            } else {
+                alert("You have already used a clue!");
+            }
+        });
+
+        // Back to settings
+        document.getElementById('back-settings').addEventListener('click', () => {
+            document.getElementById('settings-panel').classList.add('hidden');
+        });
+
+        // Show settings panel
+        document.getElementById('open-settings').addEventListener('click', () => {
+            document.getElementById('settings-panel').classList.remove('hidden');
+        });
     </script>
 </body>
 </html>
