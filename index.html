@@ -165,6 +165,47 @@
         </div>
     </div>
 
+    <div class="container">
+        <h1>Secret Number Guessing Game</h1>
+        <div id="team-setup">
+            <h3>Select Team or Play Alone</h3>
+            <button id="create-team">Create Team</button>
+            <button id="play-alone">Play Alone</button>
+        </div>
+
+        <div id="game-setup" class="hidden">
+            <h3>Setup Your Game</h3>
+            <label for="num-teams">Number of Teams: </label>
+            <input type="number" id="num-teams" placeholder="Enter number of teams (e.g., 2, 3)">
+            <button id="setup-teams">Setup Teams</button>
+        </div>
+
+        <div id="team-details" class="hidden">
+            <h3>Enter Team Details</h3>
+            <div id="teams-list"></div>
+            <button id="start-game">Start Game</button>
+        </div>
+
+        <div id="game-section" class="hidden">
+            <h3 id="team-name"></h3>
+            <input type="number" id="guess" placeholder="Enter your guess (1-100)" />
+            <button id="submit-guess">Submit Guess</button>
+            <div id="feedback" class="feedback"></div>
+            <button id="use-clue">Use Clue</button>
+            <div id="clue-feedback" class="feedback hidden"></div>
+        </div>
+
+        <div id="leaderboard" class="leaderboard hidden">
+            <h3>Leaderboard</h3>
+            <div id="team-scores"></div>
+        </div>
+
+        <div id="mini-scoreboard" class="hidden">
+            <h4>Scoreboard</h4>
+            <div id="mini-team-scores"></div>
+        </div>
+    </div>
+
     <script>
         // Game data
         let secretNumber = Math.floor(Math.random() * 100) + 1;
@@ -174,7 +215,7 @@
         let currentPlayer = '';
         let currentTeam = [];
         let totalRounds = 5; // Number of rounds for the game
-        let currentRound = 0;
+        let currentRound = 1;
         let currentPlayerIndex = 0; // To track the current player in the team
         let achievements = [];
         let cluesUsed = new Set(); // Track if the player has used a clue
@@ -204,7 +245,6 @@
             "The number is between 50 and 80.",
             "The number is a triangular number.",
             "The number is divisible by 10."
-            // Add more clues here up to 100+
         ];
 
         // Function to generate feedback based on guess
@@ -233,50 +273,35 @@
             }
         }
 
-        // Update mini scoreboard
-        function updateMiniScoreboard() {
-            const miniLeaderboard = document.getElementById('mini-team-scores');
-            miniLeaderboard.innerHTML = '';
-            for (let team in teamScores) {
-                const miniTeamDiv = document.createElement('div');
-                miniTeamDiv.innerHTML = `
-                    <div class="team-name">${team}</div>
-                    <div class="team-score">Score: ${teamScores[team]}</div>
-                `;
-                miniLeaderboard.appendChild(miniTeamDiv);
-            }
-        }
-
-        // Unlock achievement based on player progress
-        function unlockAchievement(name) {
-            if (!achievements.includes(name)) {
-                achievements.push(name);
-                alert(`Achievement unlocked: ${name}`);
-            }
-        }
-
-        // Check for unlocked content
-        function checkUnlockables() {
-            if (achievements.length >= 5) {
-                alert('New theme unlocked: Dark Mode!');
-            }
-            if (playerScore >= 50) {
-                alert('New difficulty unlocked: Medium!');
+        // Generate a new secret number for the next level
+        function nextLevel() {
+            secretNumber = Math.floor(Math.random() * 100) + 1;
+            currentRound++;
+            if (currentRound > totalRounds) {
+                alert("Game Over! Check the leaderboard for the final scores.");
+                document.getElementById('game-section').classList.add('hidden');
+                document.getElementById('leaderboard').classList.remove('hidden');
+            } else {
+                alert(`Congratulations! Moving to round ${currentRound}.`);
+                document.getElementById('feedback').innerText = '';
+                document.getElementById('guess').value = '';
             }
         }
 
         // Event Listeners
-        document.getElementById('create-team').addEventListener('click', () => {
-            document.getElementById('team-setup').classList.add('hidden');
-            document.getElementById('game-setup').classList.remove('hidden');
+        document.getElementById('submit-guess').addEventListener('click', () => {
+            const guess = parseInt(document.getElementById('guess').value);
+            if (guess) {
+                const feedback = generateFeedback(guess);
+                document.getElementById('feedback').innerText = feedback;
+                if (feedback === "Correct! You've guessed the secret number!") {
+                    teamScores[currentTeam] += 10; // Reward points
+                    updateLeaderboard();
+                    nextLevel();
+                }
+            }
         });
 
-        document.getElementById('play-alone').addEventListener('click', () => {
-            currentPlayer = prompt("Enter your name:");
-            document.getElementById('team-name').innerText = `Player: ${currentPlayer}`;
-            document.getElementById('team-setup').classList.add('hidden');
-            document.getElementById('game-section').classList.remove('hidden');
-        });
 
         document.getElementById('setup-teams').addEventListener('click', () => {
             const numTeams = document.getElementById('num-teams').value;
