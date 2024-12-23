@@ -400,25 +400,29 @@
             }
         });
 
-       // Initialize a dictionary to track clues used by each team
+      // Initialize a dictionary to track clues used by each team
 let cluesUsedByTeam = {};
 
 // Modify the 'Use Clue' event listener
 document.getElementById('use-clue').addEventListener('click', () => {
     if (!cluesUsedByTeam[currentTeam]) {
-        cluesUsedByTeam[currentTeam] = 0;  // Initialize clue usage count for the team if not set
+        cluesUsedByTeam[currentTeam] = new Set();
     }
 
-    if (cluesUsedByTeam[currentTeam] < 3) {
-        // Select a random clue
-        const clue = clues[Math.floor(Math.random() * clues.length)];
-        document.getElementById('clue-feedback').innerText = `Clue: ${clue}`;
-        cluesUsedByTeam[currentTeam]++;  // Increment the clue usage count for the team
+    // Randomly pick a clue that has not been used by the team
+    let availableClues = clues.filter(clue => !cluesUsedByTeam[currentTeam].has(clue));
+    
+    if (availableClues.length > 0) {
+        let randomClue = availableClues[Math.floor(Math.random() * availableClues.length)];
+        cluesUsedByTeam[currentTeam].add(randomClue);
+        document.getElementById('clue-feedback').innerText = `Clue: ${randomClue}`;
         document.getElementById('clue-feedback').classList.remove('hidden');
     } else {
-        alert("You have already used 3 clues for this level!");
+        document.getElementById('clue-feedback').innerText = 'No more clues available for your team!';
+        document.getElementById('clue-feedback').classList.remove('hidden');
     }
 });
+
 
 
         // Back to settings
