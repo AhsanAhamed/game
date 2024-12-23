@@ -24,6 +24,8 @@
             border-radius: 15px;
             background: rgba(0, 0, 0, 0.7);
             box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            width: 80%;
+            max-width: 600px;
         }
         h1 {
             font-size: 2.5rem;
@@ -73,27 +75,25 @@
             padding: 15px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            color: #ffeb3b;
         }
         .leaderboard h3 {
             margin-bottom: 10px;
+            font-size: 1.5rem;
         }
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background: #ddd;
-            border-radius: 10px;
-            margin-top: 10px;
+        .leaderboard ol {
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
-        .progress {
-            height: 100%;
-            border-radius: 10px;
-            background: #76d7c4;
-            width: 0;
-            transition: width 0.5s;
+        .leaderboard li {
+            font-size: 1.2rem;
+            padding: 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .score-history {
-            font-size: 1rem;
-            color: #ffeb3b;
+        .leaderboard li:last-child {
+            border-bottom: none;
         }
         .floating-score {
             position: absolute;
@@ -112,18 +112,27 @@
             background: rgba(0, 0, 0, 0.7);
             padding: 10px;
             border-radius: 10px;
+            color: white;
+            font-size: 1.2rem;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
         }
     </style>
 </head>
 <body>
     <div id="mini-scoreboard">
         <h3>Mini Scoreboard</h3>
-        <p id="mini-score"></p>
+        <p id="mini-score">Player 1: 0 Points</p>
     </div>
     <div class="container">
         <h1>🔥 Pro Gamer Number Guessing Game 🔥</h1>
         <div id="setupPhase">
+            <h2>Set the Number of Players</h2>
+            <input type="number" id="totalPlayers" placeholder="Enter number of players" min="2">
+            <button onclick="startGame()">Start Game</button>
+        </div>
+        <div id="setupSecretPhase" class="hidden">
             <h2>Player 1: Set the Secret Number</h2>
+            <input type="text" id="setterName" placeholder="Enter your name (Setter)">
             <input type="password" id="secretNumber" placeholder="Enter a number (1-100)">
             <button onclick="setSecretNumber()">Confirm</button>
         </div>
@@ -138,12 +147,16 @@
             <h3>Leaderboard</h3>
             <ol id="leaderboardList"></ol>
         </div>
+        <div id="gameOverPhase" class="hidden">
+            <h2>Game Over!</h2>
+            <button onclick="restartGame()">Restart Game</button>
+        </div>
     </div>
 
     <script>
         let secretNumber;
         let currentPlayer = 1;
-        let totalPlayers = 2;
+        let totalPlayers = 0;
         let playerNames = [];
         let leaderboard = {};
         let playerScores = [];
@@ -151,25 +164,77 @@
         let scoreHistory = {};
         let setterName = '';
         let gameWinner = null;
+        let playerGuessCounts = {};
+        let currentSetterIndex = 0;
+        let roundCount = 0;
+        let comboStreak = 0;
+
+        // Add sounds for correct guess and wrong guess
+        const correctGuessSound = new Audio('https://www.soundjay.com/button/beep-07.wav');
+        const wrongGuessSound = new Audio('https://www.soundjay.com/button/beep-09.wav');
+
+        function startGame() {
+            totalPlayers = parseInt(document.getElementById('totalPlayers').value);
+            if (isNaN(totalPlayers) || totalPlayers < 2) {
+                alert('Please enter a valid number of players (at least 2).');
+                return;
+            }
+
+            document.getElementById('setupPhase').classList.add('hidden');
+            document.getElementById('setupSecretPhase').classList.remove('hidden');
+        }
 
         function setSecretNumber() {
+            setterName = document.getElementById('setterName').value;
             secretNumber = parseInt(document.getElementById('secretNumber').value);
             if (isNaN(secretNumber) || secretNumber < 1 || secretNumber > 100) {
                 alert('Please enter a valid number between 1 and 100.');
                 return;
             }
-            if (!setterName) {
-                setterName = playerNames[currentPlayer - 1];
+
+            playerNames.push(setterName);
+            for (let i = 2; i <= totalPlayers; i++) {
+                let playerName = prompt(`Enter Player ${i}'s name:`);
+                playerNames.push(playerName);
             }
 
-            document.getElementById('setupPhase').classList.add('hidden');
+            document.getElementById('setupSecretPhase').classList.add('hidden');
             document.getElementById('playPhase').classList.remove('hidden');
             updateCurrentPlayer();
+            updateSetter();
+        }
+
+        function giveFeedback(guess) {
+            const diff = Math.abs(secretNumber - guess);
+            let feedback = "";
+
+            const hotRange = [secretNumber - 5, secretNumber + 5];
+            const warmRange = [secretNumber - 10, secretNumber + 10];
+            const coldRange = [secretNumber - 20, secretNumber + 20];
+            const veryColdRange = [1, 100];
+
+            if (guess >= hotRange[0] && guess <= hotRange[1]) {
+                feedback = "Hot! You're very close.";
+            } else if (guess >= warmRange[0] && guess <= warmRange[1]) {
+                feedback = "Warm!";
+            } else if (guess >= coldRange[0] && guess <= coldRange[1]) {
+                feedback = "Cold.";
+            } else if (guess >= veryColdRange[0] && guess <= veryColdRange[1]) {
+                feedback = "Very Cold! You're very far.";
+            }
+
+            return feedback;
         }
 
         function makeGuess() {
             if (gameWinner) {
                 alert(`${gameWinner} is the winner! Game Over.`);
+                return;
+            }
+
+            if (playerNames[currentPlayer - 1] === setterName) {
+                alert(`${setterName} is the setter, and cannot guess!`);
+                nextPlayer();
                 return;
             }
 
@@ -179,92 +244,85 @@
                 return;
             }
 
-            const feedback = document.getElementById('feedback');
-            let pointsEarned = 0;
-            let correctGuess = false;
+            const feedback = giveFeedback(guess);
+            document.getElementById('feedback').textContent = feedback;
 
+            playerGuessCounts[playerNames[currentPlayer - 1]] = (playerGuessCounts[playerNames[currentPlayer - 1]] || 0) + 1;
+            document.getElementById('score-board').textContent = `${playerNames[currentPlayer - 1]}: Guess Count: ${playerGuessCounts[playerNames[currentPlayer - 1]]}`;
+
+            // Play sound effects
             if (guess === secretNumber) {
-                feedback.textContent = `🎉 Correct! ${playerNames[currentPlayer - 1]} guessed it! 🎉`;
-                feedback.style.color = 'lime';
-                pointsEarned = 5;
-                correctGuess = true;
-                streaks[playerNames[currentPlayer - 1]] = (streaks[playerNames[currentPlayer - 1]] || 0) + 1;
-                leaderboard[playerNames[currentPlayer - 1]] = (leaderboard[playerNames[currentPlayer - 1]] || 0) + pointsEarned;
-                scoreHistory[playerNames[currentPlayer - 1]] = scoreHistory[playerNames[currentPlayer - 1]] || [];
-                scoreHistory[playerNames[currentPlayer - 1]].push(pointsEarned);
+                correctGuessSound.play();
+                alert("🎉 Correct! You guessed it!");
+                leaderboard[playerNames[currentPlayer - 1]] = (leaderboard[playerNames[currentPlayer - 1]] || 0) + 10;
+                showFloatingScore(10);
+                comboStreak++;
                 updateLeaderboard();
-                showFloatingScore(pointsEarned);
                 updateMiniScoreboard();
                 checkWinner();
+                setNewSecretNumber();
             } else {
-                feedback.textContent = `❌ Incorrect guess. Try again!`;
-                feedback.style.color = 'red';
+                wrongGuessSound.play();
             }
 
-            updateProgressBar(currentPlayer - 1, pointsEarned);
-
-            if (correctGuess) {
-                nextPlayer();
-            }
-        }
-
-        function showFloatingScore(points) {
-            const floatingScore = document.createElement('div');
-            floatingScore.classList.add('floating-score');
-            floatingScore.textContent = `+${points} Points!`;
-            document.body.appendChild(floatingScore);
-            setTimeout(() => floatingScore.remove(), 2000);
-        }
-
-        function updateProgressBar(playerIndex, points) {
-            const progressBar = document.getElementById(`progressBar${playerIndex}`);
-            const progress = (leaderboard[playerNames[playerIndex]] || 0) / 15 * 100;
-            progressBar.style.width = `${progress}%`;
+            nextPlayer();
         }
 
         function nextPlayer() {
-            currentPlayer = currentPlayer % totalPlayers + 1;
+            currentPlayer++;
+            if (currentPlayer > totalPlayers) {
+                currentPlayer = 1;
+                roundCount++;
+                updateCurrentPlayer();
+            }
             updateCurrentPlayer();
         }
 
         function updateCurrentPlayer() {
-            document.getElementById('currentPlayer').textContent = `${playerNames[currentPlayer - 1]}: Make a Guess`;
+            document.getElementById('currentPlayer').textContent = `Player ${currentPlayer}: Make a Guess`;
+        }
+
+        function updateSetter() {
+            document.getElementById('currentPlayer').textContent = `It's your turn, ${setterName}.`;
+        }
+
+        function showFloatingScore(score) {
+            const floatingScore = document.createElement('div');
+            floatingScore.classList.add('floating-score');
+            floatingScore.textContent = `+${score} points`;
+            document.body.appendChild(floatingScore);
+            setTimeout(() => floatingScore.remove(), 2000);
         }
 
         function updateLeaderboard() {
-            const leaderboardList = document.getElementById('leaderboardList');
+            let leaderboardList = document.getElementById('leaderboardList');
             leaderboardList.innerHTML = '';
-            Object.keys(leaderboard).forEach(player => {
-                const li = document.createElement('li');
+            for (let player in leaderboard) {
+                let li = document.createElement('li');
                 li.textContent = `${player}: ${leaderboard[player]} points`;
                 leaderboardList.appendChild(li);
-            });
-        }
-
-        function checkWinner() {
-            Object.keys(leaderboard).forEach(player => {
-                if (leaderboard[player] >= 15) {
-                    gameWinner = player;
-                    alert(`${gameWinner} wins with 15 points!`);
-                }
-            });
-        }
-
-        function updateMiniScoreboard() {
-            const miniScoreboard = document.getElementById('mini-score');
-            miniScoreboard.innerHTML = '';
-            Object.keys(leaderboard).forEach(player => {
-                miniScoreboard.innerHTML += `${player}: ${leaderboard[player]} | `;
-            });
-        }
-
-        function initializeGame() {
-            for (let i = 1; i <= totalPlayers; i++) {
-                playerNames.push(prompt(`Enter Player ${i}'s name:`) || `Player ${i}`);
             }
         }
 
-        initializeGame();
+        function updateMiniScoreboard() {
+            let miniScoreboard = document.getElementById('mini-score');
+            miniScoreboard.textContent = `${playerNames[currentPlayer - 1]}: ${leaderboard[playerNames[currentPlayer - 1]] || 0} points`;
+        }
+
+        function checkWinner() {
+            for (let player in leaderboard) {
+                if (leaderboard[player] >= 150) {
+                    gameWinner = player;
+                    document.getElementById('gameOverPhase').classList.remove('hidden');
+                    document.getElementById('playPhase').classList.add('hidden');
+                    alert(`${gameWinner} is the winner!`);
+                }
+            }
+        }
+
+        function restartGame() {
+            location.reload();
+        }
     </script>
 </body>
 </html>
