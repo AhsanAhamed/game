@@ -163,7 +163,22 @@
             <h4>Scoreboard</h4>
             <div id="mini-team-scores"></div>
         </div>
+
+        <div id="developer-details" class="hidden">
+            <h3>Game Developer Details</h3>
+            <div class="developer-info">
+                <h4>Name:Rifas Ahsan Ahamed</h4>
+                <p><strong>Role:</strong> Game Developer, UI/UX Designer, and Web Developer</p>
+                <p><strong>Contact:</strong> rifasahsanahamed01@gmail.com</p>
+                <p><strong>About:</strong> Ahsan is a passionate game developer and UI/UX designer working to bring engaging experiences to users. This game is one of his many projects aimed at creating fun and interactive learning tools.</p>
+            </div>
+            <button id="close-developer-details">Close</button>
+        </div>
+
+        <button id="view-developer-details">View Developer Details</button>
     </div>
+
+
 
     <script>
         // Game data
@@ -400,40 +415,75 @@
             }
         });
 
-      // Initialize a dictionary to track clues used by each team
-let cluesUsedByTeam = {};
+          // Initialize a dictionary to track clues used by each team
+          let cluesUsedByTeam = {};
 
 // Modify the 'Use Clue' event listener
 document.getElementById('use-clue').addEventListener('click', () => {
-    if (!cluesUsedByTeam[currentTeam]) {
-        cluesUsedByTeam[currentTeam] = new Set();
-    }
-
-    // Randomly pick a clue that has not been used by the team
-    let availableClues = clues.filter(clue => !cluesUsedByTeam[currentTeam].has(clue));
-    
-    if (availableClues.length > 0) {
-        let randomClue = availableClues[Math.floor(Math.random() * availableClues.length)];
-        cluesUsedByTeam[currentTeam].add(randomClue);
-        document.getElementById('clue-feedback').innerText = `Clue: ${randomClue}`;
-        document.getElementById('clue-feedback').classList.remove('hidden');
+    if (!cluesUsed.has(currentTeam)) {
+        // Check if a clue has been used already by the current team
+        if (!cluesUsedByTeam[currentTeam]) {
+            cluesUsedByTeam[currentTeam] = new Set();
+        }
+        // Select a random clue that hasn't been used by this team yet
+        let availableClues = clues.filter(clue => !cluesUsedByTeam[currentTeam].has(clue));
+        if (availableClues.length > 0) {
+            const clue = availableClues[Math.floor(Math.random() * availableClues.length)];
+            document.getElementById('clue-feedback').innerText = `Clue: ${clue}`;
+            document.getElementById('clue-feedback').classList.remove('hidden');
+            cluesUsedByTeam[currentTeam].add(clue);  // Mark this clue as used by the current team
+            cluesUsed.add(currentTeam);  // Prevent the clue from being used multiple times by the same team
+        } else {
+            document.getElementById('clue-feedback').innerText = "No more clues available!";
+            document.getElementById('clue-feedback').classList.remove('hidden');
+        }
     } else {
-        document.getElementById('clue-feedback').innerText = 'No more clues available for your team!';
+        document.getElementById('clue-feedback').innerText = "You have already used a clue for this round!";
         document.getElementById('clue-feedback').classList.remove('hidden');
     }
 });
 
+// Reset the game state and variables for a new round
+function resetGameState() {
+    secretNumber = Math.floor(Math.random() * 100) + 1;
+    currentRound++;
+    cluesUsed.clear();  // Reset the clues usage tracker
+    document.getElementById('feedback').innerText = '';
+    document.getElementById('clue-feedback').classList.add('hidden');
+    if (currentRound < totalRounds) {
+        // Logic for switching to the next round or team
+        currentPlayerIndex = (currentPlayerIndex + 1) % currentTeam.length; // Move to the next player
+        currentTeam = teams[currentRound % teams.length]; // Switch to next team
+        document.getElementById('team-name').innerText = `Team: ${currentTeam}`;
+        updateMiniScoreboard();
+    } else {
+        // End the game and display final results
+        alert("Game Over! Thank you for playing!");
+        updateLeaderboard();
+    }
+}
 
+// Function to update and display mini scoreboard
+function updateMiniScoreboard() {
+    const miniLeaderboard = document.getElementById('mini-team-scores');
+    miniLeaderboard.innerHTML = '';
+    for (let team in teamScores) {
+        const miniTeamDiv = document.createElement('div');
+        miniTeamDiv.innerHTML = `
+            <div class="team-name">${team}</div>
+            <div class="team-score">Score: ${teamScores[team]}</div>
+        `;
+        miniLeaderboard.appendChild(miniTeamDiv);
+    }
 
-        // Back to settings
-        document.getElementById('back-settings').addEventListener('click', () => {
-            document.getElementById('settings-panel').classList.add('hidden');
+    document.getElementById('view-developer-details').addEventListener('click', () => {
+            document.getElementById('developer-details').classList.remove('hidden');
         });
 
-        // Show settings panel
-        document.getElementById('open-settings').addEventListener('click', () => {
-            document.getElementById('settings-panel').classList.remove('hidden');
+        document.getElementById('close-developer-details').addEventListener('click', () => {
+            document.getElementById('developer-details').classList.add('hidden');
         });
-    </script>
+}
+</script>
 </body>
 </html>
