@@ -165,47 +165,6 @@
         </div>
     </div>
 
-    <div class="container">
-        <h1>Secret Number Guessing Game</h1>
-        <div id="team-setup">
-            <h3>Select Team or Play Alone</h3>
-            <button id="create-team">Create Team</button>
-            <button id="play-alone">Play Alone</button>
-        </div>
-
-        <div id="game-setup" class="hidden">
-            <h3>Setup Your Game</h3>
-            <label for="num-teams">Number of Teams: </label>
-            <input type="number" id="num-teams" placeholder="Enter number of teams (e.g., 2, 3)">
-            <button id="setup-teams">Setup Teams</button>
-        </div>
-
-        <div id="team-details" class="hidden">
-            <h3>Enter Team Details</h3>
-            <div id="teams-list"></div>
-            <button id="start-game">Start Game</button>
-        </div>
-
-        <div id="game-section" class="hidden">
-            <h3 id="team-name"></h3>
-            <input type="number" id="guess" placeholder="Enter your guess (1-100)" />
-            <button id="submit-guess">Submit Guess</button>
-            <div id="feedback" class="feedback"></div>
-            <button id="use-clue">Use Clue</button>
-            <div id="clue-feedback" class="feedback hidden"></div>
-        </div>
-
-        <div id="leaderboard" class="leaderboard hidden">
-            <h3>Leaderboard</h3>
-            <div id="team-scores"></div>
-        </div>
-
-        <div id="mini-scoreboard" class="hidden">
-            <h4>Scoreboard</h4>
-            <div id="mini-team-scores"></div>
-        </div>
-    </div>
-
     <script>
         // Game data
         let secretNumber = Math.floor(Math.random() * 100) + 1;
@@ -214,38 +173,113 @@
         let teamScores = {};
         let currentPlayer = '';
         let currentTeam = [];
-        let totalRounds = 20; // Number of rounds for the game
-        let currentRound = 1;
+        let totalRounds = 5; // Number of rounds for the game
+        let currentRound = 0;
         let currentPlayerIndex = 0; // To track the current player in the team
         let achievements = [];
         let cluesUsed = new Set(); // Track if the player has used a clue
-        let teamCluesUsed = {}; // Track clues used by each team in the current round
         let clues = [
             "The number is even.",
-            "The number is greater than 50.",
-            "The number is a prime number.",
-            "The number is divisible by 3.",
-            "The number is less than 30.",
-            "The number is odd.",
-            "The number is a perfect square.",
-            "The number is greater than 75.",
-            "The number is a multiple of 5.",
-            "The number is less than 10.",
-            "The number is a two-digit number.",
-            "The number is divisible by 7.",
-            "The number is a Fibonacci number.",
-            "The number is a perfect cube.",
-            "The number is a multiple of 4.",
-            "The number is greater than 25 but less than 50.",
-            "The number is smaller than 60.",
-            "The number is divisible by 6.",
-            "The number is a multiple of 2.",
-            "The number is prime.",
-            "The number is divisible by 9.",
-            "The number is an odd multiple of 3.",
-            "The number is between 50 and 80.",
-            "The number is a triangular number.",
-            "The number is divisible by 10."
+    "The number is greater than 50.",
+    "The number is prime.",
+    "The number is divisible by 3.",
+    "The number is less than 30.",
+    "The number is odd.",
+    "The number is a perfect square.",
+    "The number is greater than 75.",
+    "The number is a multiple of 5.",
+    "The number is less than 10.",
+    "The number is a two-digit number.",
+    "The number is divisible by 7.",
+    "The number is a Fibonacci number.",
+    "The number is a perfect cube.",
+    "The number is a multiple of 4.",
+    "The number is greater than 25 but less than 50.",
+    "The number is smaller than 60.",
+    "The number is divisible by 6.",
+    "The number is a multiple of 2.",
+    "The number is prime.",
+    "The number is divisible by 9.",
+    "The number is an odd multiple of 3.",
+    "The number is between 50 and 80.",
+    "The number is a triangular number.",
+    "The number is divisible by 10.",
+    "The number is divisible by 11.",
+    "The number is less than 20.",
+    "The number is a perfect square and even.",
+    "The number is divisible by 12.",
+    "The number is a multiple of 6.",
+    "The number is a two-digit even number.",
+    "The number is a square of a prime number.",
+    "The number is divisible by 8.",
+    "The number is greater than 100.",
+    "The number is a palindrome.",
+    "The number is a prime greater than 50.",
+    "The number is divisible by 4 but not by 2.",
+    "The number is a power of 2.",
+    "The number is a power of 3.",
+    "The number is divisible by 13.",
+    "The number is an odd prime number.",
+    "The number is divisible by 5 and 7.",
+    "The number is greater than 60 but less than 90.",
+    "The number is less than 100 but greater than 50.",
+    "The number is a perfect square greater than 50.",
+    "The number is an even multiple of 3.",
+    "The number is a three-digit number.",
+    "The number is divisible by both 3 and 5.",
+    "The number is a perfect cube and odd.",
+    "The number is divisible by 14.",
+    "The number is divisible by 15.",
+    "The number is greater than 200.",
+    "The number is divisible by 18.",
+    "The number is a multiple of 7 and 11.",
+    "The number is less than 50 and divisible by 4.",
+    "The number is a prime number less than 30.",
+    "The number is a perfect square and divisible by 3.",
+    "The number is divisible by 16.",
+    "The number is a prime number less than 100.",
+    "The number is a multiple of 9 and 5.",
+    "The number is less than 100 and divisible by 6.",
+    "The number is a perfect square and a multiple of 4.",
+    "The number is a Fibonacci number and prime.",
+    "The number is divisible by 17.",
+    "The number is a square of an odd number.",
+    "The number is divisible by 19.",
+    "The number is divisible by 20.",
+    "The number is a multiple of 2 but not a multiple of 4.",
+    "The number is greater than 10 but less than 20.",
+    "The number is divisible by both 7 and 13.",
+    "The number is an even multiple of 9.",
+    "The number is a perfect cube and divisible by 4.",
+    "The number is divisible by 21.",
+    "The number is a triangular number greater than 10.",
+    "The number is divisible by 22.",
+    "The number is an odd perfect square.",
+    "The number is greater than 80 but less than 120.",
+    "The number is a prime number and less than 10.",
+    "The number is a multiple of 10 and 5.",
+    "The number is divisible by 25.",
+    "The number is a power of 10.",
+    "The number is divisible by 27.",
+    "The number is a multiple of 3 but not divisible by 9.",
+    "The number is divisible by 28.",
+    "The number is a power of 4.",
+    "The number is divisible by 29.",
+    "The number is divisible by both 3 and 7.",
+    "The number is an even perfect cube.",
+    "The number is divisible by 30.",
+    "The number is a prime greater than 100.",
+    "The number is divisible by 31.",
+    "The number is a perfect square and a multiple of 6.",
+    "The number is divisible by 33.",
+    "The number is a Fibonacci number greater than 50.",
+    "The number is divisible by 36.",
+    "The number is a multiple of 4 and 9.",
+    "The number is divisible by 37.",
+    "The number is divisible by 38.",
+    "The number is divisible by 39.",
+    "The number is divisible by 40."
+            // Add more clues here up to 100+
         ];
 
         // Function to generate feedback based on guess
@@ -274,35 +308,50 @@
             }
         }
 
-        // Generate a new secret number for the next level
-        function nextLevel() {
-            secretNumber = Math.floor(Math.random() * 100) + 1;
-            currentRound++;
-            if (currentRound > totalRounds) {
-                alert("Game Over! Check the leaderboard for the final scores.");
-                document.getElementById('game-section').classList.add('hidden');
-                document.getElementById('leaderboard').classList.remove('hidden');
-            } else {
-                alert(`Congratulations! Moving to round ${currentRound}.`);
-                document.getElementById('feedback').innerText = '';
-                document.getElementById('guess').value = '';
+        // Update mini scoreboard
+        function updateMiniScoreboard() {
+            const miniLeaderboard = document.getElementById('mini-team-scores');
+            miniLeaderboard.innerHTML = '';
+            for (let team in teamScores) {
+                const miniTeamDiv = document.createElement('div');
+                miniTeamDiv.innerHTML = `
+                    <div class="team-name">${team}</div>
+                    <div class="team-score">Score: ${teamScores[team]}</div>
+                `;
+                miniLeaderboard.appendChild(miniTeamDiv);
+            }
+        }
+
+        // Unlock achievement based on player progress
+        function unlockAchievement(name) {
+            if (!achievements.includes(name)) {
+                achievements.push(name);
+                alert(`Achievement unlocked: ${name}`);
+            }
+        }
+
+        // Check for unlocked content
+        function checkUnlockables() {
+            if (achievements.length >= 5) {
+                alert('New theme unlocked: Dark Mode!');
+            }
+            if (playerScore >= 50) {
+                alert('New difficulty unlocked: Medium!');
             }
         }
 
         // Event Listeners
-        document.getElementById('submit-guess').addEventListener('click', () => {
-            const guess = parseInt(document.getElementById('guess').value);
-            if (guess) {
-                const feedback = generateFeedback(guess);
-                document.getElementById('feedback').innerText = feedback;
-                if (feedback === "Correct! You've guessed the secret number!") {
-                    teamScores[currentTeam] += 10; // Reward points
-                    updateLeaderboard();
-                    nextLevel();
-                }
-            }
+        document.getElementById('create-team').addEventListener('click', () => {
+            document.getElementById('team-setup').classList.add('hidden');
+            document.getElementById('game-setup').classList.remove('hidden');
         });
 
+        document.getElementById('play-alone').addEventListener('click', () => {
+            currentPlayer = prompt("Enter your name:");
+            document.getElementById('team-name').innerText = `Player: ${currentPlayer}`;
+            document.getElementById('team-setup').classList.add('hidden');
+            document.getElementById('game-section').classList.remove('hidden');
+        });
 
         document.getElementById('setup-teams').addEventListener('click', () => {
             const numTeams = document.getElementById('num-teams').value;
@@ -351,20 +400,25 @@
             }
         });
 
-        // Use Clue
-        document.getElementById('use-clue').addEventListener('click', () => {
-            if (!teamCluesUsed[currentTeam]) {
-                teamCluesUsed[currentTeam] = 0;
-            }
-            if (teamCluesUsed[currentTeam] < 3) {
-                const clue = clues[Math.floor(Math.random() * clues.length)];
-                document.getElementById('clue-feedback').innerText = `Clue: ${clue}`;
-                document.getElementById('clue-feedback').classList.remove('hidden');
-                teamCluesUsed[currentTeam]++;
-            } else {
-                alert("You've already used all 3 clues for this round!");
-            }
-        });
+       // Initialize a dictionary to track clues used by each team
+let cluesUsedByTeam = {};
+
+// Modify the 'Use Clue' event listener
+document.getElementById('use-clue').addEventListener('click', () => {
+    if (!cluesUsedByTeam[currentTeam]) {
+        cluesUsedByTeam[currentTeam] = 0;  // Initialize clue usage count for the team if not set
+    }
+
+    if (cluesUsedByTeam[currentTeam] < 3) {
+        // Select a random clue
+        const clue = clues[Math.floor(Math.random() * clues.length)];
+        document.getElementById('clue-feedback').innerText = `Clue: ${clue}`;
+        cluesUsedByTeam[currentTeam]++;  // Increment the clue usage count for the team
+        document.getElementById('clue-feedback').classList.remove('hidden');
+    } else {
+        alert("You have already used 3 clues for this level!");
+    }
+});
 
 
         // Back to settings
